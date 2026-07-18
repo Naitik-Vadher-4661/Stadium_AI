@@ -15,57 +15,20 @@ export async function checkRateLimit(ip: string = 'anonymous'): Promise<boolean>
   try {
     const supabase = await createClient();
     
-    // Fetch current rate limit record for this IP
-    const { data: record, error: fetchError } = await supabase
-      .from('api_rate_limits')
-      .select('count, window_start')
-      .eq('ip', ip)
-      .single();
+    // Call the check_rate_limit RPC function
+    // This handles the select, insert, and update atomically in one round-trip
+    const { data: isAllowed, error } = await supabase.rpc('check_rate_limit', {
+      ip_address: ip,
+      max_requests: MAX_REQUESTS_PER_WINDOW,
+      window_ms: RATE_LIMIT_WINDOW_MS
+    });
 
-    const now = new Date();
-
-    if (fetchError && fetchError.code === 'PGRST116') {
-      // Record not found (No rows returned), insert a new one
-      const { error: insertError } = await supabase
-        .from('api_rate_limits')
-        .insert([{ ip, count: 1, window_start: now.toISOString() }]);
-        
-      if (insertError) {
-        console.error('Rate limit insert error:', insertError);
-        return true; // Fail open to not block legitimate traffic on DB error
-      }
-      return true;
-    } else if (fetchError) {
-      console.error('Rate limit fetch error:', fetchError);
+    if (error) {
+      console.error('Rate limit RPC error:', error);
       return true; // Fail open
     }
 
-    if (!record) return true;
-
-    const windowStart = new Date(record.window_start).getTime();
-    
-    // Check if we are past the 1-minute window
-    if (now.getTime() - windowStart > RATE_LIMIT_WINDOW_MS) {
-      // Reset the window
-      await supabase
-        .from('api_rate_limits')
-        .update({ count: 1, window_start: now.toISOString() })
-        .eq('ip', ip);
-      return true;
-    }
-
-    // If within the window, check the count
-    if (record.count >= MAX_REQUESTS_PER_WINDOW) {
-      return false; // Rate limited
-    }
-
-    // Increment count
-    await supabase
-      .from('api_rate_limits')
-      .update({ count: record.count + 1 })
-      .eq('ip', ip);
-      
-    return true; // Allowed
+    return isAllowed;
 
   } catch (error) {
     console.error('Rate limiting error:', error);

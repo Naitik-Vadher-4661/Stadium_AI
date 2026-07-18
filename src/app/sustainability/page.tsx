@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { Loader2, Leaf, Train, Ticket, CupSoda } from 'lucide-react';
+import { useCompletion } from '@ai-sdk/react';
 
 export default function SustainabilityPage() {
   const { language, t } = useLanguage();
@@ -13,33 +14,24 @@ export default function SustainabilityPage() {
     { id: 'recycled_cup', label: t('eco.action3'), icon: <CupSoda className="w-5 h-5" />, points: 25 },
   ];
   const [loggedActions, setLoggedActions] = useState<string[]>([]);
-  const [narrative, setNarrative] = useState<string>('');
-  const [loading, setLoading] = useState(false);
-  useEffect(() => {
-    const fetchNarrative = async (actions: string[]) => {
-      setLoading(true);
-      try {
-        const res = await fetch('/api/sustainability', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ actions, language }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setNarrative(data.narrative || 'Log an action to see your impact!');
-        } else {
-          setNarrative('Could not calculate impact at this time. Keep up the good work!');
-        }
-      } catch (e) {
-        console.error('Failed to fetch sustainability narrative:', e);
-        setNarrative('Network error. Keep up the great work!');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const lastFetchedRef = useRef<{ actions: string, lang: string }>({ actions: '', lang: '' });
 
-    fetchNarrative(loggedActions);
-  }, [loggedActions, language]);
+  const { completion, complete, isLoading: aiLoading, error: aiError } = useCompletion({
+    api: '/api/sustainability',
+  });
+
+  useEffect(() => {
+    const actionsString = loggedActions.join(',');
+    if (lastFetchedRef.current.actions === actionsString && lastFetchedRef.current.lang === language) {
+      return;
+    }
+    
+    lastFetchedRef.current = { actions: actionsString, lang: language };
+    
+    complete('', {
+      body: { actions: loggedActions, language }
+    });
+  }, [loggedActions, language, complete]);
 
   const toggleAction = (id: string) => {
     let newActions;
@@ -92,14 +84,16 @@ export default function SustainabilityPage() {
 
         <div className="bg-background border border-card-border rounded-xl p-6 text-center shadow-sm">
           <h3 className="font-semibold text-lg mb-1 text-primary">{t('eco.impact')}: {totalPoints}</h3>
-          {loading ? (
+          {aiError ? (
+            <p className="text-red-400 py-4">Network error. Keep up the great work!</p>
+          ) : !completion && aiLoading ? (
             <div className="flex items-center justify-center text-foreground/60 space-x-2 py-4">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span>{t('eco.loading')}</span>
             </div>
           ) : (
             <p className="text-foreground/80 leading-relaxed py-2 italic">
-              &quot;{narrative}&quot;
+              &quot;{completion || 'Log an action to see your impact!'}&quot;
             </p>
           )}
         </div>

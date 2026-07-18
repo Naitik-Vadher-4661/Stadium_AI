@@ -28,18 +28,20 @@ export async function updateGateData(newData: GateStatus[]): Promise<void> {
   // Use admin client because the public cannot update gate statuses (bypasses RLS)
   const supabase = await createAdminClient();
   
-  // Upsert all gate rows
-  for (const gate of newData) {
-    await supabase.from('gate_status').upsert({
-      id: gate.id,
-      gate_name: gate.gate_name,
-      occupancy_percent: gate.occupancy_percent,
-      queue_length: gate.queue_length,
-      entry_rate: gate.entry_rate,
-      max_capacity: gate.max_capacity,
-      status: gate.status,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'gate_name' });
+  const upsertData = newData.map(gate => ({
+    id: gate.id,
+    gate_name: gate.gate_name,
+    occupancy_percent: gate.occupancy_percent,
+    queue_length: gate.queue_length,
+    entry_rate: gate.entry_rate,
+    max_capacity: gate.max_capacity,
+    status: gate.status,
+    updated_at: new Date().toISOString()
+  }));
+
+  const { error } = await supabase.from('gate_status').upsert(upsertData, { onConflict: 'gate_name' });
+  if (error) {
+    console.error('Failed to update gate data:', error);
   }
 }
 

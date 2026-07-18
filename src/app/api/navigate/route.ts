@@ -4,10 +4,11 @@ import { generateDirectionsFromPath } from '@/lib/navigation/directions';
 import { StadiumLocation, StadiumEdge } from '@/types/stadium';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { checkRateLimit } from '@/utils/rateLimit';
 
 const navigateSchema = z.object({
-  startId: z.string().min(1),
-  endId: z.string().min(1),
+  startId: z.string().min(1).max(100),
+  endId: z.string().min(1).max(100),
   requiresAccessible: z.boolean().default(false),
   language: z.enum(['en', 'es', 'pt', 'hi']).default('en'),
 });
@@ -29,6 +30,12 @@ const MOCK_EDGES: StadiumEdge[] = [
 
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get('x-forwarded-for') || 'anonymous';
+    const isAllowed = await checkRateLimit(ip);
+    if (!isAllowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const body = await req.json();
     const parsed = navigateSchema.safeParse(body);
 

@@ -31,7 +31,10 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect the /dashboard route
+  // Protect routes that require a session (logged in or anonymous)
+  const protectedRoutes = ['/assistant', '/crowd', '/sustainability', '/transit', '/accessibility'];
+  const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route));
+
   // Redirect to assistant if logged in and trying to view /login or /signup
   if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
     const url = request.nextUrl.clone();
@@ -39,8 +42,11 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // For the hackathon MVP, we allow unauthenticated access to all features (guest mode).
-  // We removed the forced redirect to /login so judges can freely explore.
+  if (isProtectedRoute && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
+  }
 
   return supabaseResponse;
 }

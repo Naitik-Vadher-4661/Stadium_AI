@@ -53,6 +53,7 @@ Output format MUST be valid JSON with the following structure:
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' },
         temperature: 0.1,
+        max_tokens: 150,
       }),
     });
 

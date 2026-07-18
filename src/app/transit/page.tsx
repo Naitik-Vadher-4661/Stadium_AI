@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useFanProfile, TransitPreference } from '@/components/providers/FanProfileProvider';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { Loader2, Train, Bus, Car } from 'lucide-react';
+import { useCompletion } from '@ai-sdk/react';
 
 interface TransitRoute {
   id: string;
@@ -16,36 +17,46 @@ interface TransitRoute {
 export default function TransitPage() {
   const { transitMode, setTransitMode } = useFanProfile();
   const { language, t } = useLanguage();
-  const [recommendation, setRecommendation] = useState<string>('');
   const [schedule, setSchedule] = useState<TransitRoute[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [scheduleLoading, setScheduleLoading] = useState(true);
+  
+  const lastFetchedRef = useRef<{ mode: string, lang: string }>({ mode: '', lang: '' });
 
+  const { completion, complete, isLoading: aiLoading, error: aiError } = useCompletion({
+    api: '/api/transit',
+  });
+
+  // Fetch base schedule data immediately on mount
   useEffect(() => {
-    const fetchTransit = async (mode: string) => {
-      setLoading(true);
+    const fetchSchedule = async () => {
+      setScheduleLoading(true);
       try {
-        const res = await fetch('/api/transit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transitMode: mode, language }),
-        });
+        const res = await fetch('/api/transit');
         if (res.ok) {
           const data = await res.json();
-          setRecommendation(data.recommendation || 'Recommendation unavailable.');
-          setSchedule(data.schedule);
-        } else {
-          setRecommendation('Could not fetch transit recommendation at this time.');
+          setSchedule(data);
         }
       } catch (e) {
-        console.error('Failed to fetch transit rec:', e);
-        setRecommendation('Network error while fetching transit data.');
+        console.error('Failed to fetch schedule:', e);
       } finally {
-        setLoading(false);
+        setScheduleLoading(false);
       }
     };
+    fetchSchedule();
+  }, []);
 
-    fetchTransit(transitMode);
-  }, [transitMode, language]);
+  // Fetch AI recommendation when mode or language changes, avoiding double-fetches
+  useEffect(() => {
+    if (lastFetchedRef.current.mode === transitMode && lastFetchedRef.current.lang === language) {
+      return; // Already fetched for these dependencies
+    }
+    
+    lastFetchedRef.current = { mode: transitMode, lang: language };
+    
+    complete('', {
+      body: { transitMode, language }
+    });
+  }, [transitMode, language, complete]);
 
   return (
     <div className="min-h-full bg-background flex flex-col md:flex-row transition-colors">
@@ -76,13 +87,15 @@ export default function TransitPage() {
 
           <div className="bg-background border border-card-border rounded-xl p-6 shadow-sm">
             <h3 className="font-semibold text-lg mb-2 text-primary">{t('transit.aiTitle')}</h3>
-            {loading ? (
+            {aiError ? (
+              <p className="text-red-400">Could not fetch transit recommendation at this time.</p>
+            ) : !completion && aiLoading ? (
               <div className="flex items-center text-foreground/60 space-x-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>{t('transit.loading')}</span>
               </div>
             ) : (
-              <p className="text-foreground/80 leading-relaxed">{recommendation}</p>
+              <p className="text-foreground/80 leading-relaxed">{completion}</p>
             )}
           </div>
         </div>
@@ -92,7 +105,9 @@ export default function TransitPage() {
       <div className="w-full md:w-1/2 p-6 bg-background">
         <h3 className="text-xl font-bold text-foreground mb-4">{t('transit.depTitle')}</h3>
         <div className="space-y-4">
-          {schedule.map((route) => (
+          {scheduleLoading && schedule.length === 0 ? (
+            <div className="text-center text-foreground/50 py-10">Loading schedules...</div>
+          ) : schedule.map((route) => (
             <div key={route.id} className="bg-card border border-card-border rounded-lg p-4 flex items-center justify-between shadow-sm">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
@@ -111,9 +126,6 @@ export default function TransitPage() {
               </div>
             </div>
           ))}
-          {schedule.length === 0 && loading && (
-            <div className="text-center text-foreground/50 py-10">Loading schedules...</div>
-          )}
         </div>
       </div>
     </div>

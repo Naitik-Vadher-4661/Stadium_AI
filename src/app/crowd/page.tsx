@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useFanProfile } from '@/components/providers/FanProfileProvider';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { Loader2, Utensils } from 'lucide-react';
+import { useCompletion } from '@ai-sdk/react';
 
 interface FoodStand {
   id: string;
@@ -16,39 +17,46 @@ export default function CrowdPage() {
   const { favoriteFood } = useFanProfile();
   const { language, t } = useLanguage();
   const [currentFood, setCurrentFood] = useState<string>(favoriteFood || 'Any');
-  const [recommendation, setRecommendation] = useState<string>('');
   const [stands, setStands] = useState<FoodStand[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [standsLoading, setStandsLoading] = useState(true);
 
+  const lastFetchedRef = useRef<{ food: string, lang: string }>({ food: '', lang: '' });
+
+  const { completion, complete, isLoading: aiLoading, error: aiError } = useCompletion({
+    api: '/api/crowd',
+  });
+
+  // Fetch base stands data immediately on mount
   useEffect(() => {
-    const fetchRecommendation = async (food: string) => {
-      setLoading(true);
+    const fetchStands = async () => {
+      setStandsLoading(true);
       try {
-        const res = await fetch('/api/crowd', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ favoriteFood: food, language }),
-        });
+        const res = await fetch('/api/crowd');
         if (res.ok) {
           const data = await res.json();
-          setRecommendation(data.recommendation || 'Recommendation unavailable.');
           setStands(data.stands || []);
-        } else {
-          // Fallback
-          const data = await res.json().catch(() => ({}));
-          setRecommendation('Recommendation temporarily unavailable.');
-          if (data.stands) setStands(data.stands);
         }
       } catch (e) {
-        console.error('Failed to fetch crowd rec:', e);
-        setRecommendation('Recommendation temporarily unavailable.');
+        console.error('Failed to fetch stands:', e);
       } finally {
-        setLoading(false);
+        setStandsLoading(false);
       }
     };
+    fetchStands();
+  }, []);
 
-    fetchRecommendation(currentFood);
-  }, [currentFood, language]);
+  // Fetch AI recommendation when food or language changes
+  useEffect(() => {
+    if (lastFetchedRef.current.food === currentFood && lastFetchedRef.current.lang === language) {
+      return;
+    }
+    
+    lastFetchedRef.current = { food: currentFood, lang: language };
+    
+    complete('', {
+      body: { favoriteFood: currentFood, language }
+    });
+  }, [currentFood, language, complete]);
 
   return (
     <div className="min-h-full bg-background flex flex-col md:flex-row transition-colors">
@@ -81,13 +89,15 @@ export default function CrowdPage() {
 
           <div className="bg-background border border-card-border rounded-xl p-6 shadow-sm">
             <h3 className="font-semibold text-lg mb-2 text-primary">{t('crowd.aiTitle')}</h3>
-            {loading ? (
+            {aiError ? (
+              <p className="text-red-400">Recommendation temporarily unavailable.</p>
+            ) : !completion && aiLoading ? (
               <div className="flex items-center text-foreground/60 space-x-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>{t('crowd.loading')}</span>
               </div>
             ) : (
-              <p className="text-foreground/80 leading-relaxed">{recommendation}</p>
+              <p className="text-foreground/80 leading-relaxed">{completion}</p>
             )}
           </div>
         </div>
@@ -111,7 +121,7 @@ export default function CrowdPage() {
               </div>
             </div>
           ))}
-          {stands.length === 0 && loading && (
+          {stands.length === 0 && standsLoading && (
             <div className="text-center text-foreground/50 py-10">Loading heatmaps...</div>
           )}
         </div>
