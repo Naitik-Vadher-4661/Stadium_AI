@@ -1,22 +1,50 @@
 @import "tailwindcss";
 
+@layer base {
+  html.high-contrast {
+    /* Pure Black & White High Contrast Palette */
+    --background: #000000 !important;
+    --foreground: #ffffff !important;
+    --primary: #ffff00 !important; /* High Visibility Yellow */
+    --secondary: #00ffff !important; /* High Visibility Cyan */
+    --accent: #00ff00 !important; /* High Visibility Green */
+    --card: #000000 !important;
+    --card-border: #ffffff !important;
+  }
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Light Mode (Complementary to Neon) */
+  --background: #f8f8ff;
+  --foreground: #0b0f1a;
+  --primary: #008ba3; /* Darker cyan for light mode contrast */
+  --secondary: #d81b60; /* Darker magenta */
+  --accent: #558b2f; /* Darker lime/green */
+  --card: #ffffff;
+  --card-border: #e5e7eb;
+}
+
+[data-theme='dark'] {
+  /* Dark Mode (Electric Neon Palette) */
+  --background: #0b0f1a;
+  --foreground: #f8f8ff;
+  --primary: #00e5ff; /* Cyan */
+  --secondary: #ff2d95; /* Magenta */
+  --accent: #a6ff00; /* Lime */
+  --card: #131b2e;
+  --card-border: #1f2942;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-card: var(--card);
+  --color-card-border: var(--card-border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {

@@ -1,36 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# StadiumAI: GenAI-Powered Operations for FIFA World Cup 2026
 
-## Getting Started
+> **Hackathon Judges:** Please see our [Prompt Engineering Documentation](docs/prompts.md) for a detailed log of the prompt engineering process behind this submission.
 
-First, run the development server:
+## Problem Statement & Solution Mapping
+Managing stadium operations during a massive global event like the FIFA World Cup 2026 presents unprecedented logistical challenges. Organizers must handle extreme crowd density, navigate fans across complex multi-level venues, and provide immediate assistance to a diverse, multilingual global audience. **StadiumAI** solves this by leveraging Generative AI to provide real-time, multilingual fan assistance, dynamic accessibility-aware navigation, and proactive crowd intelligence to stadium operators.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Key Features
+
+- 🌍 **Multilingual Fan Assistant (Multilingual Assistance & Accessibility)**
+  - A responsive chatbot supporting English, Spanish, Portuguese, and Hindi.
+  - Features High-Contrast modes and a "Simplified Language" toggle for enhanced cognitive accessibility. *(Note: Text-to-Speech was intentionally removed from the MVP scope due to inconsistent browser speech synthesis APIs, but remains a planned post-MVP feature).*
+- 🗺️ **Accessible Pathfinding (Navigation)**
+  - Uses Dijkstra's algorithm to calculate the shortest path across complex stadium graphs.
+  - Automatically filters out stairs and non-accessible routes when accessibility mode is toggled.
+- 🗣️ **GenAI Directions (Navigation & Real-time Decision Support)**
+  - Converts raw path node data into friendly, contextual, step-by-step walking directions using the Groq LLM.
+- 📊 **Real-Time Crowd Simulator (Crowd Management)**
+  - Simulates dynamic gate occupancies, queue lengths, and entry rates to mimic live stadium sensors.
+- 🧠 **GenAI Operational Intelligence (Operational Intelligence)**
+  - Analyzes raw crowd data every 30 seconds. When bottlenecks or critical capacities are detected, the LLM generates actionable, plain-language alerts and redirect recommendations.
+
+## Where and How GenAI Does the Heavy Lifting
+
+This solution doesn't just use an LLM as a generic chatbot; it relies on GenAI for complex reasoning tasks:
+
+1. **Contextual Route Translation**: Raw pathfinding algorithms output arrays of node IDs (e.g., `['g1', 's2', 'f1']`). Our GenAI takes this array, factors in the user's selected language, calculates the total walking time, and reasons out human-friendly directions (e.g., *"Head through Gate 1, take the stairs to Floor 2, and you'll find the Food Court on your right"*).
+2. **Predictive Crowd Analysis**: Instead of hardcoding simple `if (occupancy > 90%) { alert() }` logic, we feed the live snapshot of all gates to the LLM. The model correlates queue lengths, entry rates, and capacities to determine the *severity* of the situation and generates a logical *recommendation* (e.g., *"Redirect incoming fans from Gate 3 to Gate 2 to balance entry rates"*).
+3. **Adaptive Communication**: By utilizing system prompts, the LLM dynamically scales its vocabulary. When a user enables "Simplified Language," the LLM restricts itself to B1-level vocabulary to assist fans with cognitive disabilities or limited language proficiency.
+
+## Architecture Diagram
+
+```mermaid
+graph TD
+    subgraph Client [Next.js Frontend]
+        UI[Fan App / Ops Dashboard]
+        Map[Interactive Map]
+        A11y[Accessibility Context]
+    end
+
+    subgraph API [Next.js API Routes]
+        ChatAPI[/api/chat]
+        NavAPI[/api/navigate]
+        AlertAPI[/api/alerts]
+        SimAPI[/api/simulate-tick]
+    end
+
+    subgraph Logic [Core Logic Layer]
+        Graph[Dijkstra Pathfinding]
+        Sim[Crowd Simulator]
+    end
+
+    subgraph AI [Groq LLM / LLaMA 3.3]
+        Translator[Language / Simplicity Engine]
+        PathDesc[Direction Generator]
+        Analyzer[Crowd Data Analyzer]
+    end
+
+    subgraph Data [Supabase]
+        Auth[Authentication]
+        DB[(Knowledge / FAQ DB)]
+    end
+
+    UI <--> ChatAPI
+    UI <--> NavAPI
+    UI <--> AlertAPI
+    
+    ChatAPI <--> Translator
+    ChatAPI <--> DB
+    
+    NavAPI <--> Graph
+    NavAPI <--> PathDesc
+    
+    AlertAPI <--> Sim
+    AlertAPI <--> Analyzer
+    
+    SimAPI --> Sim
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tech Stack
+- **Framework**: Next.js 15 (App Router, React 19)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS, Lucide Icons
+- **AI Integration**: Vercel AI SDK, Groq API (LLaMA 3.3 70B Versatile)
+- **Database & Auth**: Supabase
+- **Testing**: Vitest
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Setup Instructions
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. Environment Variables
+Create a `.env.local` file in the root directory and add the following keys (do not use quotes):
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+GROQ_API_KEY=your_groq_api_key
+CRON_SECRET=your_cron_secret
+```
 
-## Learn More
+### 2. Installation
+Install the necessary dependencies using npm:
+```bash
+npm install
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Run Locally
+Start the development server:
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser to view the application.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> **Note on Auth**: If testing locally, Supabase Free Tier limits email signups (3 per hour). If you hit a rate limit, sign in with an already created account or disable email confirmations in your Supabase dashboard.
