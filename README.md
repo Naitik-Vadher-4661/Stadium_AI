@@ -1,6 +1,6 @@
 # StadiumAI: GenAI-Powered Operations for FIFA World Cup 2026
 
-> **Hackathon Judges:** Please see our [Prompt Engineering Documentation](docs/prompts.md) for a detailed log of the prompt engineering process behind this submission.
+
 
 ## Problem Statement & Solution Mapping
 Managing stadium operations during a massive global event like the FIFA World Cup 2026 presents unprecedented logistical challenges. Organizers must handle extreme crowd density, navigate fans across complex multi-level venues, and provide immediate assistance to a diverse, multilingual global audience. **StadiumAI** solves this by leveraging Generative AI to provide real-time, multilingual fan assistance, dynamic accessibility-aware navigation, and proactive crowd intelligence to stadium operators.
