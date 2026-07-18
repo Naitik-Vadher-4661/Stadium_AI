@@ -1,3 +1,73 @@
+-- Create Core Tables
+CREATE TABLE IF NOT EXISTS public.stadium_locations (
+    id text PRIMARY KEY,
+    name text NOT NULL,
+    category text NOT NULL,
+    floor integer NOT NULL,
+    x integer NOT NULL,
+    y integer NOT NULL,
+    is_accessible boolean NOT NULL DEFAULT true
+);
+
+CREATE TABLE IF NOT EXISTS public.stadium_edges (
+    id text PRIMARY KEY,
+    from_location_id text REFERENCES public.stadium_locations(id) ON DELETE CASCADE,
+    to_location_id text REFERENCES public.stadium_locations(id) ON DELETE CASCADE,
+    distance_meters integer NOT NULL,
+    walk_time_seconds integer NOT NULL,
+    is_accessible boolean NOT NULL DEFAULT true,
+    is_bidirectional boolean NOT NULL DEFAULT true
+);
+
+CREATE TABLE IF NOT EXISTS public.gate_status (
+    id text PRIMARY KEY,
+    gate_name text UNIQUE NOT NULL,
+    occupancy_percent integer NOT NULL,
+    queue_length integer NOT NULL,
+    entry_rate integer NOT NULL,
+    max_capacity integer NOT NULL,
+    status text NOT NULL,
+    updated_at timestamp with time zone NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.crowd_alerts (
+    id text PRIMARY KEY,
+    alert_type text NOT NULL,
+    severity text NOT NULL,
+    message text NOT NULL,
+    affected_gates text[] NOT NULL DEFAULT '{}',
+    recommendation text,
+    is_resolved boolean NOT NULL DEFAULT false,
+    created_at timestamp with time zone NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.faq_content (
+    id text PRIMARY KEY,
+    question_en text NOT NULL,
+    answer_en text NOT NULL,
+    category text NOT NULL
+);
+
+-- Insert Mock Data
+INSERT INTO public.stadium_locations (id, name, category, floor, x, y, is_accessible) VALUES
+  ('1', 'Gate 1', 'gate', 1, 10, 10, true),
+  ('section_112', 'Section 112', 'seating', 1, 30, 10, true),
+  ('3', 'Food Court A', 'food', 2, 50, 30, true),
+  ('restroom_1', 'Restroom 1', 'restroom', 1, 20, 20, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.stadium_edges (id, from_location_id, to_location_id, distance_meters, walk_time_seconds, is_accessible, is_bidirectional) VALUES
+  ('e1', '1', 'section_112', 20, 30, true, true),
+  ('e2', 'section_112', 'restroom_1', 15, 20, true, true),
+  ('e3', 'restroom_1', '3', 40, 60, true, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.faq_content (id, question_en, answer_en, category) VALUES
+  ('faq1', 'Where is Gate 1?', 'Gate 1 is at the main entrance, Level 1.', 'Navigation'),
+  ('faq2', 'Where can I get food or drinks?', 'Food Court A is located on Level 2.', 'Facilities'),
+  ('faq3', 'Are there accessible restrooms?', 'Yes, all restrooms including Restroom 1 have accessible stalls.', 'Accessibility')
+ON CONFLICT (id) DO NOTHING;
+
 -- Create rate limits table
 CREATE TABLE IF NOT EXISTS public.api_rate_limits (
     ip text PRIMARY KEY,
