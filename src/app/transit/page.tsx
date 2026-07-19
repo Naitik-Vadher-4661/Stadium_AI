@@ -24,6 +24,7 @@ export default function TransitPage() {
 
   const { completion, complete, isLoading: aiLoading, error: aiError } = useCompletion({
     api: '/api/transit',
+    streamProtocol: 'text',
   });
 
   // Fetch base schedule data immediately on mount

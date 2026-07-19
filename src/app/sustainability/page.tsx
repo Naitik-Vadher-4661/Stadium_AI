@@ -47,6 +47,7 @@ export default function SustainabilityPage() {
 
   const { completion, complete, isLoading: aiLoading, error: aiError } = useCompletion({
     api: '/api/sustainability',
+    streamProtocol: 'text',
   });
 
   useEffect(() => {

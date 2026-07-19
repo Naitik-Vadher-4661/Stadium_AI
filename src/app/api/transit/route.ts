@@ -61,7 +61,7 @@ export async function POST(req: Request) {
       maxTokens: 150,
     });
 
-    return result.toDataStreamResponse();
+    return result.toTextStreamResponse();
   } catch (error) {
     console.error('Transit POST error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

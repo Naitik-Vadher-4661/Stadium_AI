@@ -24,6 +24,7 @@ export default function CrowdPage() {
 
   const { completion, complete, isLoading: aiLoading, error: aiError } = useCompletion({
     api: '/api/crowd',
+    streamProtocol: 'text',
   });
 
   // Fetch base stands data immediately on mount
