@@ -3,22 +3,33 @@
 
 
 ## Problem Statement & Solution Mapping
-Managing stadium operations during a massive global event like the FIFA World Cup 2026 presents unprecedented logistical challenges. Organizers must handle extreme crowd density, navigate fans across complex multi-level venues, and provide immediate assistance to a diverse, multilingual global audience. **StadiumAI** solves this by leveraging Generative AI to provide real-time, multilingual fan assistance, dynamic accessibility-aware navigation, and proactive crowd intelligence to stadium operators.
 
-## Key Features
+Managing stadium operations during a massive global event like the FIFA World Cup 2026 presents unprecedented logistical challenges. StadiumAI maps its features directly to the 8 core problem statement pillars:
 
-- 🌍 **Multilingual Fan Assistant (Multilingual Assistance & Accessibility)**
-  - A responsive chatbot supporting English, Spanish, Portuguese, and Hindi.
-  - Features High-Contrast modes and a "Simplified Language" toggle for enhanced cognitive accessibility. *(Note: Text-to-Speech was intentionally removed from the MVP scope due to inconsistent browser speech synthesis APIs, but remains a planned post-MVP feature).*
-- 🗺️ **Accessible Pathfinding (Navigation)**
-  - Uses Dijkstra's algorithm to calculate the shortest path across complex stadium graphs.
-  - Automatically filters out stairs and non-accessible routes when accessibility mode is toggled.
-- 🗣️ **GenAI Directions (Navigation & Real-time Decision Support)**
-  - Converts raw path node data into friendly, contextual, step-by-step walking directions using the Groq LLM.
-- 📊 **Real-Time Crowd Simulator (Crowd Management)**
-  - Simulates dynamic gate occupancies, queue lengths, and entry rates to mimic live stadium sensors.
-- 🧠 **GenAI Operational Intelligence (Operational Intelligence)**
-  - Analyzes raw crowd data every 30 seconds. When bottlenecks or critical capacities are detected, the LLM generates actionable, plain-language alerts and redirect recommendations.
+1. **Navigation**: 
+   - **Feature**: Accessible Pathfinding & GenAI Directions.
+   - **GenAI Role**: Translates raw Dijkstra's algorithm node outputs into human-friendly, contextual, step-by-step walking directions.
+2. **Crowd Management**: 
+   - **Feature**: Real-Time Crowd Simulator & Alert Feed.
+   - **GenAI Role**: Analyzes live gate capacity data to identify queue surges and bottlenecks dynamically.
+3. **Accessibility**: 
+   - **Feature**: High-Contrast Mode & Simplified Language Toggle.
+   - **GenAI Role**: Dynamically alters the system prompt to restrict vocabulary to a B1 level, ensuring cognitive accessibility for users with disabilities or limited language proficiency.
+4. **Transportation**: 
+   - **Feature**: Match-Day Transit Hub.
+   - **GenAI Role**: Processes live transit schedules and user preferences to generate personalized departure plans indicating exactly when fans should leave their seats.
+5. **Sustainability**: 
+   - **Feature**: Eco-Rewards Tracker.
+   - **GenAI Role**: Evaluates user-logged sustainable actions (like taking public transit or recycling) to generate personalized impact insights and encouragement.
+6. **Multilingual Assistance**: 
+   - **Feature**: Multilingual Fan Assistant.
+   - **GenAI Role**: Uses the LLM's native language capabilities to respond seamlessly in English, Spanish, Portuguese, and Hindi based on the fan's profile.
+7. **Operational Intelligence**: 
+   - **Feature**: GenAI Operational Dashboard.
+   - **GenAI Role**: Ingests raw stadium metrics and synthesizes them into actionable, plain-language insights for stadium staff.
+8. **Real-time Decision Support**: 
+   - **Feature**: Automated Redirect Recommendations.
+   - **GenAI Role**: Determines the severity of gate congestion and formulates logical recommendations to redirect fans to less crowded gates in real-time.
 
 ## Where and How GenAI Does the Heavy Lifting
 

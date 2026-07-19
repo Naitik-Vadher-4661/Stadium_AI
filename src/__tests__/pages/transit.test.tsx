@@ -16,25 +16,41 @@ describe('Transit Page', () => {
   });
 
   it('renders loading state then success state with mock data', async () => {
-    // Setup mock response
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        recommendation: 'Leave in 10 minutes to catch your train.',
-        schedule: [
+    // Setup mock responses
+    mockFetch.mockImplementation((url, options) => {
+      if (options && options.method === 'POST') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: new Headers({ 'Content-Type': 'text/plain; charset=utf-8' }),
+          body: new ReadableStream({
+            start(controller) {
+              controller.enqueue(new TextEncoder().encode('0:"Leave in 10 minutes to catch your train."\n'));
+              controller.close();
+            }
+          }),
+          text: async () => 'Leave in 10 minutes to catch your train.',
+        });
+      }
+
+      // Default GET request
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ([
           { id: '1', mode: 'Train', route: 'Northbound', departure: '10:00 PM', status: 'On Time' }
-        ]
-      })
-    } as Response);
+        ])
+      });
+    });
 
     render(<TransitPage />);
 
     // Check loading state immediately
-    expect(screen.getByText(/Calculating walking distance/i)).toBeTruthy();
+    expect(screen.getByText(/Loading schedules/i)).toBeTruthy();
 
     // Wait for the recommendation text to appear
     await waitFor(() => {
-      expect(screen.getByText('Leave in 10 minutes to catch your train.')).toBeTruthy();
+      expect(screen.getByText(/Leave in 10 minutes to catch your train/i)).toBeTruthy();
     });
 
     // Wait for schedule to render
@@ -50,7 +66,7 @@ describe('Transit Page', () => {
     render(<TransitPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Network error while fetching transit data/i)).toBeTruthy();
+      expect(screen.getByText(/Could not fetch transit recommendation at this time/i)).toBeTruthy();
     });
   });
 });
