@@ -28,6 +28,10 @@ export default function SustainabilityPage() {
     
     lastFetchedRef.current = { actions: actionsString, lang: language };
     
+    if (loggedActions.length === 0) {
+      return; // Skip LLM call to save resources if they haven't logged anything
+    }
+
     complete('recommend', {
       body: { actions: loggedActions, language }
     });
