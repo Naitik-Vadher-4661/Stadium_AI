@@ -69,7 +69,7 @@ export async function POST(req: Request) {
       maxTokens: 150,
     });
 
-    return result.toTextStreamResponse();
+    return result.toDataStreamResponse();
   } catch (error) {
     console.error('Crowd POST error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
