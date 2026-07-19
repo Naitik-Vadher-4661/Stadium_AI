@@ -22,7 +22,7 @@ export function ChatWindow() {
       if (saved) {
         try {
           return JSON.parse(saved);
-        } catch (e) {}
+        } catch {}
       }
     }
     return [];
@@ -46,6 +46,7 @@ export function ChatWindow() {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
   }, []);
 

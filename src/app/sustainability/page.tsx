@@ -22,7 +22,7 @@ export default function SustainabilityPage() {
           if (Array.isArray(parsed)) {
             return parsed;
           }
-        } catch (e) {}
+        } catch {}
       }
     }
     return [];
@@ -31,6 +31,7 @@ export default function SustainabilityPage() {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
   }, []);
 

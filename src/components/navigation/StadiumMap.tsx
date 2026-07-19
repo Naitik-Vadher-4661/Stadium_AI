@@ -20,6 +20,7 @@ export function StadiumMap({ pathResult, allLocations = [] }: StadiumMapProps) {
         aria-label="Stadium Map"
         role="img"
       >
+        <title>Interactive Stadium Map</title>
         {/* Draw a basic stadium outline for context */}
         <circle cx={100} cy={100} r={80} fill="none" stroke="#ddd" strokeWidth="2" />
         <rect x={70} y={50} width={60} height={100} fill="#eee" rx="10" />

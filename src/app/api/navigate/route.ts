@@ -28,6 +28,11 @@ const MOCK_EDGES: StadiumEdge[] = [
   { id: 'e3', from_location_id: 'restroom_1', to_location_id: '3', distance_meters: 40, walk_time_seconds: 60, is_accessible: true, is_bidirectional: true }
 ];
 
+let cachedLocations: StadiumLocation[] | null = null;
+let cachedEdges: StadiumEdge[] | null = null;
+let lastCacheTime = 0;
+const CACHE_TTL = 60 * 1000; // 1 minute cache
+
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') || 'anonymous';
@@ -45,20 +50,29 @@ export async function POST(req: Request) {
 
     const { startId, endId, requiresAccessible, language }: NavigateRequest = parsed.data;
 
-    const supabase = await createClient();
+    let locations = cachedLocations;
+    let edges = cachedEdges;
     
-    const [locationsResult, edgesResult] = await Promise.all([
-      supabase.from('stadium_locations').select('*'),
-      supabase.from('stadium_edges').select('*')
-    ]);
+    if (!locations || !edges || Date.now() - lastCacheTime > CACHE_TTL) {
+      const supabase = await createClient();
+      
+      const [locationsResult, edgesResult] = await Promise.all([
+        supabase.from('stadium_locations').select('id, name, name_es, name_pt, name_hi, category, x, y, floor, is_accessible, description'),
+        supabase.from('stadium_edges').select('id, from_location_id, to_location_id, distance_meters, walk_time_seconds, is_accessible, is_bidirectional')
+      ]);
 
-    let locations = locationsResult.data as StadiumLocation[];
-    let edges = edgesResult.data as StadiumEdge[];
+      locations = locationsResult.data as StadiumLocation[];
+      edges = edgesResult.data as StadiumEdge[];
 
-    if (locationsResult.error || edgesResult.error || !locations || locations.length === 0) {
-      console.warn('Navigation fallback triggered: Using mock locations and edges due to DB error or empty data.', { locError: locationsResult.error, edgeError: edgesResult.error });
-      locations = MOCK_LOCATIONS;
-      edges = MOCK_EDGES;
+      if (locationsResult.error || edgesResult.error || !locations || locations.length === 0) {
+        console.warn('Navigation fallback triggered: Using mock locations and edges due to DB error or empty data.', { locError: locationsResult.error, edgeError: edgesResult.error });
+        locations = MOCK_LOCATIONS;
+        edges = MOCK_EDGES;
+      } else {
+        cachedLocations = locations;
+        cachedEdges = edges;
+        lastCacheTime = Date.now();
+      }
     }
 
     const pathResult = findShortestPath(startId, endId, locations, edges, requiresAccessible);

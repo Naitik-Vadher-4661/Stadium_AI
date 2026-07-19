@@ -1,21 +1,7 @@
 import { GateStatus, CrowdAlert } from '@/types/crowd';
 import { generateId } from 'ai';
 
-/**
- * Analyzes current gate data and uses Groq to generate plain-language alerts 
- * and redirect recommendations if thresholds are breached.
- */
-export async function analyzeCrowdData(gateData: GateStatus[]): Promise<CrowdAlert[]> {
-  // Find gates that need attention
-  const criticalGates = gateData.filter(g => g.status === 'critical' || g.status === 'warning');
-  
-  if (criticalGates.length === 0) {
-    return []; // No alerts needed
-  }
-
-  // Find normal gates that could be used for redirects
-  const normalGates = gateData.filter(g => g.status === 'normal');
-
+async function generateAlertFromLLM(criticalGates: GateStatus[], normalGates: GateStatus[]): Promise<{ alert_type: string; severity: string; message: string; recommendation: string }> {
   const prompt = `
 You are an AI Operational Intelligence Assistant for a stadium during the FIFA World Cup.
 Analyze the following gate data and generate a concise, actionable alert for the organizers.
@@ -41,33 +27,51 @@ Output format MUST be valid JSON with the following structure:
 }
 `;
 
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' },
+      temperature: 0.1,
+      max_tokens: 150,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Groq API error: ${res.status}`);
+  }
+
+  const data = await res.json();
+  return JSON.parse(data.choices[0].message.content);
+}
+
+/**
+ * Analyzes current gate data and uses Groq to generate plain-language alerts 
+ * and redirect recommendations if thresholds are breached.
+ */
+export async function analyzeCrowdData(gateData: GateStatus[]): Promise<CrowdAlert[]> {
+  // Find gates that need attention
+  const criticalGates = gateData.filter(g => g.status === 'critical' || g.status === 'warning');
+  
+  if (criticalGates.length === 0) {
+    return []; // No alerts needed
+  }
+
+  // Find normal gates that could be used for redirects
+  const normalGates = gateData.filter(g => g.status === 'normal');
+
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-        temperature: 0.1,
-        max_tokens: 150,
-      }),
-    });
-
-    if (!res.ok) {
-      throw new Error(`Groq API error: ${res.status}`);
-    }
-
-    const data = await res.json();
-    const result = JSON.parse(data.choices[0].message.content);
+    const result = await generateAlertFromLLM(criticalGates, normalGates);
 
     return [{
       id: generateId(),
-      alert_type: result.alert_type || 'general',
-      severity: result.severity || 'warning',
+      alert_type: (result.alert_type as import('@/types/crowd').AlertType) || 'general',
+      severity: (result.severity as 'warning' | 'critical') || 'warning',
       message: result.message || 'High congestion detected.',
       recommendation: result.recommendation || 'Deploy crowd control team.',
       affected_gates: criticalGates.map(g => g.gate_name),

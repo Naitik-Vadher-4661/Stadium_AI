@@ -11,7 +11,7 @@ export async function getGateData(): Promise<GateStatus[]> {
   const supabase = await createAdminClient();
   const { data, error } = await supabase
     .from('gate_status')
-    .select('*')
+    .select('id, gate_name, occupancy_percent, queue_length, entry_rate, max_capacity, status, updated_at')
     .order('gate_name', { ascending: true });
 
   if (error || !data || data.length === 0) {
@@ -49,7 +49,7 @@ export async function getActiveAlerts(): Promise<CrowdAlert[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('crowd_alerts')
-    .select('*')
+    .select('id, alert_type, severity, message, affected_gates, recommendation, is_resolved, created_at')
     .eq('is_resolved', false)
     .order('created_at', { ascending: false });
 

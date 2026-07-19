@@ -26,11 +26,11 @@ export function AlertFeed({ alerts }: { alerts: CrowdAlert[] }) {
           <div className="flex items-start">
             <div className="flex-shrink-0 mr-3 mt-1">
               {alert.severity === 'critical' ? (
-                <AlertTriangle className="w-5 h-5 text-red-500" />
+                <AlertTriangle className="w-5 h-5 text-red-500" aria-hidden="true" />
               ) : alert.severity === 'warning' ? (
-                <BellRing className="w-5 h-5 text-yellow-500" />
+                <BellRing className="w-5 h-5 text-yellow-500" aria-hidden="true" />
               ) : (
-                <Info className="w-5 h-5 text-blue-500" />
+                <Info className="w-5 h-5 text-blue-500" aria-hidden="true" />
               )}
             </div>
             <div className="flex-1">

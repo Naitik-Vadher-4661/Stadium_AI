@@ -7,31 +7,13 @@ import { StadiumLocation, StadiumEdge, PathResult } from '@/types/stadium';
  * WHY: We use walk time instead of distance because some paths (e.g. stairs) might be shorter in distance but take longer.
  * If requiresAccessible is true, we filter out any edges or locations that are not accessible.
  */
-export function findShortestPath(
-  startId: string,
-  endId: string,
-  locations: StadiumLocation[],
-  edges: StadiumEdge[],
-  requiresAccessible: boolean = false
-): PathResult | null {
-  // Filter out inaccessible nodes and edges if required
-  const validLocations = requiresAccessible
-    ? locations.filter(loc => loc.is_accessible)
-    : locations;
-
-  const validEdges = requiresAccessible
-    ? edges.filter(edge => edge.is_accessible)
-    : edges;
-
-  const locationMap = new Map(validLocations.map(loc => [loc.id, loc]));
-
-  // Build adjacency list
+function buildAdjacencyList(locations: StadiumLocation[], edges: StadiumEdge[]) {
+  const locationMap = new Map(locations.map(loc => [loc.id, loc]));
   const adjacencyList = new Map<string, { to: string; time: number; distance: number }[]>();
 
-  validLocations.forEach(loc => adjacencyList.set(loc.id, []));
+  locations.forEach(loc => adjacencyList.set(loc.id, []));
 
-  validEdges.forEach(edge => {
-    // Only add edge if both nodes are valid
+  edges.forEach(edge => {
     if (locationMap.has(edge.from_location_id) && locationMap.has(edge.to_location_id)) {
       adjacencyList.get(edge.from_location_id)?.push({
         to: edge.to_location_id,
@@ -48,6 +30,27 @@ export function findShortestPath(
       }
     }
   });
+
+  return { locationMap, adjacencyList };
+}
+
+export function findShortestPath(
+  startId: string,
+  endId: string,
+  locations: StadiumLocation[],
+  edges: StadiumEdge[],
+  requiresAccessible: boolean = false
+): PathResult | null {
+  // Filter out inaccessible nodes and edges if required
+  const validLocations = requiresAccessible
+    ? locations.filter(loc => loc.is_accessible)
+    : locations;
+
+  const validEdges = requiresAccessible
+    ? edges.filter(edge => edge.is_accessible)
+    : edges;
+
+  const { locationMap, adjacencyList } = buildAdjacencyList(validLocations, validEdges);
 
   if (!locationMap.has(startId) || !locationMap.has(endId)) {
     return null; // Start or end not in valid locations
