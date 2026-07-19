@@ -13,27 +13,35 @@ export default function SustainabilityPage() {
     { id: 'digital_ticket', label: t('eco.action2'), icon: <Ticket className="w-5 h-5" />, points: 10 },
     { id: 'recycled_cup', label: t('eco.action3'), icon: <CupSoda className="w-5 h-5" />, points: 25 },
   ];
-  const [loggedActions, setLoggedActions] = useState<string[]>([]);
-  
-  // Load from local storage
-  useEffect(() => {
-    const saved = localStorage.getItem('eco_actions');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          setLoggedActions(parsed);
-        }
-      } catch (e) {}
+  const [loggedActions, setLoggedActions] = useState<string[]>(() => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const saved = window.localStorage.getItem('eco_actions');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+        } catch (e) {}
+      }
     }
+    return [];
+  });
+  
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
   }, []);
 
   // Save to local storage
   useEffect(() => {
-    if (loggedActions.length > 0) {
-      localStorage.setItem('eco_actions', JSON.stringify(loggedActions));
+    if (isMounted && typeof window !== 'undefined' && window.localStorage) {
+      if (loggedActions.length > 0) {
+        window.localStorage.setItem('eco_actions', JSON.stringify(loggedActions));
+      }
     }
-  }, [loggedActions]);
+  }, [loggedActions, isMounted]);
 
   const lastFetchedRef = useRef<{ actions: string, lang: string }>({ actions: '', lang: '' });
 
@@ -72,6 +80,8 @@ export default function SustainabilityPage() {
     const action = ECO_ACTIONS.find(a => a.id === actionId);
     return total + (action?.points || 0);
   }, 0);
+
+  if (!isMounted) return null;
 
   return (
     <div className="min-h-full bg-background flex flex-col items-center justify-center py-12 px-4 transition-colors">

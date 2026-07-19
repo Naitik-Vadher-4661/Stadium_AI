@@ -16,11 +16,24 @@ import { Send, Loader2 } from 'lucide-react';
  */
 export function ChatWindow() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [initialMessages] = useState(() => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const saved = window.localStorage.getItem('chat_messages');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {}
+      }
+    }
+    return [];
+  });
+
   const { simplifiedLanguage } = useAccessibility();
   const { language, t } = useLanguage();
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error, setMessages } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
     api: '/api/chat',
+    initialMessages,
     body: {
       language,
       simplifiedLanguage,
@@ -30,30 +43,27 @@ export function ChatWindow() {
     }
   });
 
-  // Load from local storage on mount
+  const [isMounted, setIsMounted] = useState(false);
+
   useEffect(() => {
-    const saved = localStorage.getItem('chat_messages');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setMessages(parsed);
-        }
-      } catch (e) {}
-    }
-  }, [setMessages]);
+    setIsMounted(true);
+  }, []);
 
   // Save to local storage on messages change
   useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem('chat_messages', JSON.stringify(messages));
+    if (isMounted && typeof window !== 'undefined' && window.localStorage) {
+      if (messages.length > 0) {
+        window.localStorage.setItem('chat_messages', JSON.stringify(messages));
+      }
     }
-  }, [messages]);
+  }, [messages, isMounted]);
 
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  if (!isMounted) return null;
 
   return (
     <div className="flex flex-col h-[600px] w-full max-w-2xl mx-auto bg-card rounded-xl shadow-lg border border-card-border overflow-hidden transition-colors">
