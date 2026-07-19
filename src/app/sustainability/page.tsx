@@ -14,6 +14,27 @@ export default function SustainabilityPage() {
     { id: 'recycled_cup', label: t('eco.action3'), icon: <CupSoda className="w-5 h-5" />, points: 25 },
   ];
   const [loggedActions, setLoggedActions] = useState<string[]>([]);
+  
+  // Load from local storage
+  useEffect(() => {
+    const saved = localStorage.getItem('eco_actions');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setLoggedActions(parsed);
+        }
+      } catch (e) {}
+    }
+  }, []);
+
+  // Save to local storage
+  useEffect(() => {
+    if (loggedActions.length > 0) {
+      localStorage.setItem('eco_actions', JSON.stringify(loggedActions));
+    }
+  }, [loggedActions]);
+
   const lastFetchedRef = useRef<{ actions: string, lang: string }>({ actions: '', lang: '' });
 
   const { completion, complete, isLoading: aiLoading, error: aiError } = useCompletion({

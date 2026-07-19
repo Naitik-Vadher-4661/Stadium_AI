@@ -19,7 +19,7 @@ export function ChatWindow() {
   const { simplifiedLanguage } = useAccessibility();
   const { language, t } = useLanguage();
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading, error, setMessages } = useChat({
     api: '/api/chat',
     body: {
       language,
@@ -29,6 +29,26 @@ export function ChatWindow() {
       console.error('Chat error:', err);
     }
   });
+
+  // Load from local storage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('chat_messages');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+        }
+      } catch (e) {}
+    }
+  }, [setMessages]);
+
+  // Save to local storage on messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem('chat_messages', JSON.stringify(messages));
+    }
+  }, [messages]);
 
   // Auto-scroll to bottom
   useEffect(() => {
