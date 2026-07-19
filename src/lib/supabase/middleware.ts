@@ -31,21 +31,39 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Explicitly allow auth routes
+  if (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/signup')) {
+    // If logged in, redirect to assistant and preserve cookies
+    if (user) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/assistant';
+      const redirectRes = NextResponse.redirect(url);
+      
+      // We must copy the cookies from supabaseResponse, otherwise refresh tokens are lost
+      supabaseResponse.cookies.getAll().forEach(cookie => {
+        redirectRes.cookies.set(cookie.name, cookie.value, cookie);
+      });
+      return redirectRes;
+    }
+    
+    // If not logged in, just allow them to view the auth page
+    return supabaseResponse;
+  }
+
   // Protect routes that require a session (logged in or anonymous)
   const protectedRoutes = ['/assistant', '/crowd', '/sustainability', '/transit', '/accessibility'];
   const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route));
 
-  // Redirect to assistant if logged in and trying to view /login or /signup
-  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/assistant';
-    return NextResponse.redirect(url);
-  }
-
   if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
-    return NextResponse.redirect(url);
+    const redirectRes = NextResponse.redirect(url);
+    
+    // We must copy the cookies from supabaseResponse
+    supabaseResponse.cookies.getAll().forEach(cookie => {
+      redirectRes.cookies.set(cookie.name, cookie.value, cookie);
+    });
+    return redirectRes;
   }
 
   return supabaseResponse;

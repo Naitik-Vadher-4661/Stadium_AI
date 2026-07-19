@@ -8,14 +8,14 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
  */
 
 export async function getGateData(): Promise<GateStatus[]> {
-  const supabase = await createClient();
+  const supabase = await createAdminClient();
   const { data, error } = await supabase
     .from('gate_status')
     .select('*')
     .order('gate_name', { ascending: true });
 
   if (error || !data || data.length === 0) {
-    console.warn('DB Error or no gate data, falling back to mock data:', error);
+    console.error('DB Error or no gate data, falling back to mock data:', error ? error.message : 'No data returned');
     return [
       { id: 'gate_1', gate_name: 'Gate 1', occupancy_percent: 45, queue_length: 120, entry_rate: 30, max_capacity: 1000, status: 'normal', updated_at: new Date().toISOString() },
       { id: 'gate_2', gate_name: 'Gate 2', occupancy_percent: 85, queue_length: 450, entry_rate: 15, max_capacity: 800, status: 'critical', updated_at: new Date().toISOString() }
