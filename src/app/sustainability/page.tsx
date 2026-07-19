@@ -28,7 +28,7 @@ export default function SustainabilityPage() {
     
     lastFetchedRef.current = { actions: actionsString, lang: language };
     
-    complete('', {
+    complete('recommend', {
       body: { actions: loggedActions, language }
     });
   }, [loggedActions, language, complete]);

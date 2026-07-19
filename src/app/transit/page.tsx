@@ -53,7 +53,7 @@ export default function TransitPage() {
     
     lastFetchedRef.current = { mode: transitMode, lang: language };
     
-    complete('', {
+    complete('recommend', {
       body: { transitMode, language }
     });
   }, [transitMode, language, complete]);

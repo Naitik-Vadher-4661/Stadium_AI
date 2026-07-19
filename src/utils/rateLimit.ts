@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const MAX_REQUESTS_PER_WINDOW = 10; // 10 requests per minute
@@ -13,7 +13,7 @@ const MAX_REQUESTS_PER_WINDOW = 10; // 10 requests per minute
  */
 export async function checkRateLimit(ip: string = 'anonymous'): Promise<boolean> {
   try {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     
     // Call the check_rate_limit RPC function
     // This handles the select, insert, and update atomically in one round-trip

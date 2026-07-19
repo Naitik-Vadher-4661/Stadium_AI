@@ -53,7 +53,7 @@ export default function CrowdPage() {
     
     lastFetchedRef.current = { food: currentFood, lang: language };
     
-    complete('', {
+    complete('recommend', {
       body: { favoriteFood: currentFood, language }
     });
   }, [currentFood, language, complete]);
