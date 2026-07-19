@@ -1,7 +1,7 @@
 'use client';
 
 import { useChat } from 'ai/react';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { ChatMessage } from './ChatMessage';
 import { useAccessibility } from '@/hooks/useAccessibility';
 import { useLanguage } from '@/components/providers/LanguageProvider';
